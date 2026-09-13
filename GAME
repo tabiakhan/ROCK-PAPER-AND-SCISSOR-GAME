@@ -1,0 +1,187 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.Random;
+
+public class RPSGameApp extends JFrame implements ActionListener {
+    // GUI Components
+    JTextField usernameField;
+    JPasswordField passwordField;
+    JButton loginBtn, registerBtn;
+    JLabel statusLabel;
+
+    JLabel messageLabel, scoreLabel, choiceLabel, welcomeLabel;
+    JButton rockButton, paperButton, scissorsButton;
+
+    // Game Variables
+    int userScore = 0, computerScore = 0;
+    String currentUser = "";
+
+    // States
+    CardLayout cardLayout = new CardLayout();
+    JPanel mainPanel = new JPanel(cardLayout);
+    final String LOGIN_PANEL = "LoginPanel";
+    final String GAME_PANEL = "GamePanel";
+
+    final String FILE_NAME = "users.txt";
+
+    public RPSGameApp() {
+        setTitle("Rock Paper Scissors Game");
+        setSize(400, 350);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        // Setup Panels
+        mainPanel.add(createLoginPanel(), LOGIN_PANEL);
+        mainPanel.add(createGamePanel(), GAME_PANEL);
+        add(mainPanel);
+
+        setVisible(true);
+    }
+
+    // --------------------- Login Panel ---------------------
+    private JPanel createLoginPanel() {
+        JPanel panel = new JPanel(new GridLayout(6, 1));
+
+        usernameField = new JTextField();
+        passwordField = new JPasswordField();
+        loginBtn = new JButton("Login");
+        registerBtn = new JButton("Register");
+        statusLabel = new JLabel("", SwingConstants.CENTER);
+
+        panel.add(new JLabel("Username:", SwingConstants.CENTER));
+        panel.add(usernameField);
+        panel.add(new JLabel("Password:", SwingConstants.CENTER));
+        panel.add(passwordField);
+
+        JPanel btnPanel = new JPanel();
+        btnPanel.add(loginBtn);
+        btnPanel.add(registerBtn);
+        panel.add(btnPanel);
+        panel.add(statusLabel);
+
+        loginBtn.addActionListener(e -> login());
+        registerBtn.addActionListener(e -> register());
+
+        return panel;
+    }
+
+    // --------------------- Game Panel ---------------------
+    private JPanel createGamePanel() {
+        JPanel panel = new JPanel(new GridLayout(6, 1));
+
+        welcomeLabel = new JLabel("", SwingConstants.CENTER);
+        messageLabel = new JLabel("Choose Rock, Paper, or Scissors", SwingConstants.CENTER);
+        choiceLabel = new JLabel("", SwingConstants.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+        rockButton = new JButton("Rock");
+        paperButton = new JButton("Paper");
+        scissorsButton = new JButton("Scissors");
+
+        rockButton.addActionListener(this);
+        paperButton.addActionListener(this);
+        scissorsButton.addActionListener(this);
+
+        buttonPanel.add(rockButton);
+        buttonPanel.add(paperButton);
+        buttonPanel.add(scissorsButton);
+
+        scoreLabel = new JLabel("Your Score: 0 | Computer Score: 0", SwingConstants.CENTER);
+
+        panel.add(welcomeLabel);
+        panel.add(messageLabel);
+        panel.add(choiceLabel);
+        panel.add(buttonPanel);
+        panel.add(scoreLabel);
+
+        return panel;
+    }
+
+    // --------------------- Auth Functions ---------------------
+    private void login() {
+        String username = usernameField.getText().trim();
+        String password = new String(passwordField.getPassword()).trim();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel.setText("Please fill in all fields.");
+            return;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+            String line;
+            boolean found = false;
+            while ((line = reader.readLine()) != null) {
+                String[] creds = line.split(",");
+                if (creds.length == 2 && creds[0].equals(username) && creds[1].equals(password)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) {
+                currentUser = username;
+                welcomeLabel.setText("Welcome, " + currentUser + "!");
+                cardLayout.show(mainPanel, GAME_PANEL);
+            } else {
+                statusLabel.setText("Login failed. Try again.");
+            }
+
+        } catch (IOException e) {
+            statusLabel.setText("Error reading file.");
+        }
+    }
+
+    private void register() {
+        String username = usernameField.getText().trim();
+        String password = new String(passwordField.getPassword()).trim();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel.setText("Please fill in all fields.");
+            return;
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME, true))) {
+            writer.write(username + "," + password);
+            writer.newLine();
+            statusLabel.setText("Registered successfully. You can log in now.");
+        } catch (IOException e) {
+            statusLabel.setText("Error saving user.");
+        }
+    }
+
+    // --------------------- Game Logic ---------------------
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String userChoice = e.getActionCommand();
+        String[] choices = { "Rock", "Paper", "Scissors" };
+        String computerChoice = choices[new Random().nextInt(3)];
+
+        choiceLabel.setText("You: " + userChoice + " | Computer: " + computerChoice);
+
+        if (userChoice.equals(computerChoice)) {
+            messageLabel.setText("It's a Draw!");
+        } else if (
+            (userChoice.equals("Rock") && computerChoice.equals("Scissors")) ||
+            (userChoice.equals("Paper") && computerChoice.equals("Rock")) ||
+            (userChoice.equals("Scissors") && computerChoice.equals("Paper"))
+        ) {
+            userScore++;
+            messageLabel.setText("You Win!");
+        } else {
+            computerScore++;
+            messageLabel.setText("Computer Wins!");
+        }
+
+        scoreLabel.setText("Your Score: " + userScore + " | Computer Score: " + computerScore);
+    }
+
+    // --------------------- Main Method ---------------------
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new RPSGameApp());
+    }
+}
+
+        
+      
